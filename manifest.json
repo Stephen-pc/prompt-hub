@@ -1,0 +1,66 @@
+{
+  "manifest_version": 3,
+  "name": "PromptHub - AI 提示词工具箱",
+  "version": "1.0.0",
+  "description": "200+ 精选 AI 提示词模板，一键填入 ChatGPT / Claude / DeepSeek / Kimi",
+  "author": "PromptHub",
+  "homepage_url": "https://github.com/Stephen-pc/prompt-hub",
+
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png",
+    "300": "icons/icon300.png"
+  },
+
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_title": "PromptHub - AI 提示词工具箱",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+
+  "background": {
+    "service_worker": "background/background.js"
+  },
+
+  "content_scripts": [
+    {
+      "matches": [
+        "https://chatgpt.com/*",
+        "https://claude.ai/*",
+        "https://chat.deepseek.com/*",
+        "https://kimi.moonshot.cn/*",
+        "https://poe.com/*",
+        "https://tongyi.aliyun.com/*"
+      ],
+      "js": ["content/content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+
+  "permissions": [
+    "storage",
+    "activeTab",
+    "scripting"
+  ],
+
+  "host_permissions": [
+    "https://chatgpt.com/*",
+    "https://claude.ai/*",
+    "https://chat.deepseek.com/*",
+    "https://kimi.moonshot.cn/*",
+    "https://poe.com/*",
+    "https://tongyi.aliyun.com/*"
+  ],
+
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "prompt-hub@example.com",
+      "strict_min_version": "115.0"
+    }
+  }
+}
