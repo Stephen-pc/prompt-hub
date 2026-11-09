@@ -35,6 +35,30 @@
     'tongyi.aliyun.com': {
       input: 'textarea',
       type: 'textarea'
+    },
+    'www.kimi.com': {
+      input: 'div[contenteditable="true"]',
+      type: 'contenteditable'
+    },
+    'www.doubao.com': {
+      input: 'textarea',
+      type: 'textarea',
+      fallback: 'div[contenteditable="true"]'
+    },
+    'yuanbao.tencent.com': {
+      input: 'div[contenteditable="true"]',
+      type: 'contenteditable',
+      fallback: 'textarea'
+    },
+    'chatglm.cn': {
+      input: 'textarea',
+      type: 'textarea',
+      fallback: 'div[contenteditable="true"]'
+    },
+    'gemini.google.com': {
+      input: 'rich-textarea div[contenteditable="true"]',
+      type: 'contenteditable',
+      fallback: 'div[contenteditable="true"]'
     }
   };
 
@@ -45,29 +69,33 @@
     return null;
   }
 
+  // 返回 { el, type }。type 按元素实际类型推断，不盲信配置——
+  // 平台改版后原选择器可能命中的是另一种元素，用错填充函数会静默失败。
   function findInputElement(config) {
+    const resolved = (el) => ({
+      el,
+      type: el.tagName === 'TEXTAREA' || el.tagName === 'INPUT' ? 'textarea' : 'contenteditable'
+    });
+
     let el = document.querySelector(config.input);
-    if (!el && config.fallback) {
-      // Try all matching elements and find the visible one
-      const all = document.querySelectorAll(config.fallback);
-      for (const candidate of all) {
-        if (isVisible(candidate)) {
-          el = candidate;
-          break;
-        }
+    if (el && isVisible(el)) return resolved(el);
+
+    if (config.fallback) {
+      for (const candidate of document.querySelectorAll(config.fallback)) {
+        if (isVisible(candidate)) return resolved(candidate);
       }
     }
-    if (!el && config.type === 'contenteditable') {
-      // Last resort: find any visible contenteditable div
-      const all = document.querySelectorAll('[contenteditable="true"]');
-      for (const candidate of all) {
-        if (isVisible(candidate)) {
-          el = candidate;
-          break;
-        }
+
+    // 通用兜底：任意可见的 textarea / contenteditable / role=textbox。
+    // 原来只对 contenteditable 兜底，textarea 类站点（豆包、智谱、通义）
+    // 一旦改版就直接「input element not found」，用户看到的是「填不进去」。
+    for (const sel of ['textarea', 'div[contenteditable="true"]', '[role="textbox"]']) {
+      for (const candidate of document.querySelectorAll(sel)) {
+        if (isVisible(candidate)) return resolved(candidate);
       }
     }
-    return el;
+
+    return null;
   }
 
   function isVisible(el) {
@@ -129,13 +157,14 @@
       return { success: false, error: 'unknown platform' };
     }
 
-    const el = findInputElement(config);
-    if (!el) {
+    const found = findInputElement(config);
+    if (!found) {
       return { success: false, error: 'input element not found' };
     }
 
+    const { el, type } = found;
     try {
-      if (config.type === 'contenteditable') {
+      if (type === 'contenteditable') {
         fillContentEditable(el, text);
       } else {
         fillTextarea(el, text);

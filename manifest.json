@@ -1,16 +1,16 @@
 {
   "manifest_version": 3,
   "name": "PromptHub - AI 提示词工具箱",
-  "version": "1.0.0",
-  "description": "200+ 精选 AI 提示词模板，一键填入 ChatGPT / Claude / DeepSeek / Kimi",
-  "author": "PromptHub",
+  "version": "1.1.0",
+  "description": "200+ 精选 AI 提示词模板，一键填入 ChatGPT / Claude / DeepSeek / Kimi / 豆包 / 元宝",
+  "author": "Stephen-pc",
   "homepage_url": "https://github.com/Stephen-pc/prompt-hub",
 
   "icons": {
     "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
     "48": "icons/icon48.png",
-    "128": "icons/icon128.png",
-    "300": "icons/icon300.png"
+    "128": "icons/icon128.png"
   },
 
   "action": {
@@ -18,6 +18,7 @@
     "default_title": "PromptHub - AI 提示词工具箱",
     "default_icon": {
       "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
       "48": "icons/icon48.png",
       "128": "icons/icon128.png"
     }
@@ -34,8 +35,13 @@
         "https://claude.ai/*",
         "https://chat.deepseek.com/*",
         "https://kimi.moonshot.cn/*",
+        "https://www.kimi.com/*",
         "https://poe.com/*",
-        "https://tongyi.aliyun.com/*"
+        "https://tongyi.aliyun.com/*",
+        "https://www.doubao.com/*",
+        "https://yuanbao.tencent.com/*",
+        "https://chatglm.cn/*",
+        "https://gemini.google.com/*"
       ],
       "js": ["content/content.js"],
       "run_at": "document_idle"
@@ -53,14 +59,12 @@
     "https://claude.ai/*",
     "https://chat.deepseek.com/*",
     "https://kimi.moonshot.cn/*",
+    "https://www.kimi.com/*",
     "https://poe.com/*",
-    "https://tongyi.aliyun.com/*"
-  ],
-
-  "browser_specific_settings": {
-    "gecko": {
-      "id": "prompt-hub@example.com",
-      "strict_min_version": "115.0"
-    }
-  }
+    "https://tongyi.aliyun.com/*",
+    "https://www.doubao.com/*",
+    "https://yuanbao.tencent.com/*",
+    "https://chatglm.cn/*",
+    "https://gemini.google.com/*"
+  ]
 }

@@ -1,0 +1,57 @@
+name: CI
+
+# 浏览器扩展没有单元测试可跑，但有一类错误可以机器检查：
+# 站点列表在 manifest / content / background 三处各写一份，漏一处就会
+# 「某个站点点填入没反应」——不报错、控制台干净，只能靠人肉发现。
+# 这个 workflow 就是拦这个。
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  check:
+    name: 清单与站点一致性
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: 一致性检查
+        run: node tools/check-consistency.js
+
+      - name: 所有脚本语法可解析
+        run: |
+          set -e
+          for f in $(find . -name "*.js" -not -path "./node_modules/*"); do
+            node --check "$f"
+            echo "  ok   $f"
+          done
+
+      - name: 图标尺寸与实际文件一致
+        run: |
+          node - <<'JS'
+          const { readFileSync } = require('node:fs')
+          const manifest = JSON.parse(readFileSync('manifest.json', 'utf8'))
+          const sizeOf = (p) => {
+            const b = readFileSync(p)
+            // PNG: 宽高在 IHDR，偏移 16/20，大端
+            return { w: b.readUInt32BE(16), h: b.readUInt32BE(20) }
+          }
+          let bad = 0
+          for (const [declared, path] of Object.entries(manifest.icons)) {
+            const { w, h } = sizeOf(path)
+            if (w !== Number(declared) || h !== Number(declared)) {
+              console.error(`  FAIL ${path} 实际 ${w}×${h}，声明 ${declared}`)
+              bad++
+            } else {
+              console.log(`  ok   ${declared}px -> ${path}`)
+            }
+          }
+          process.exit(bad ? 1 : 0)
+          JS

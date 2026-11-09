@@ -219,7 +219,7 @@ function renderPrompts() {
     const preview = (p.prompt || '').replace(/\n/g, ' ').substring(0, 80);
 
     return `
-    <div class="prompt-card" data-id="${p.id}">
+    <div class="prompt-card" data-id="${escapeAttr(p.id)}">
       <div class="card-header">
         <div class="card-title">${escapeHtml(p.title)}</div>
         <div class="card-actions">
@@ -476,6 +476,37 @@ function exportData() {
   showToast('📤 数据已导出', 'success');
 }
 
+const VALID_CATEGORIES = new Set([
+  'writing', 'coding', 'translation', 'marketing', 'education',
+  'data', 'creative', 'productivity', 'roleplay', 'utility'
+]);
+
+// 导入的 JSON 来自外部文件，不能直接信任。
+// 不校验的话，一个 id 里带引号和 <img onerror> 的文件就能在 popup 里执行脚本，
+// 而 popup 有 chrome.* 权限、也能读到你所有提示词。返回 null 表示丢弃该条。
+function sanitizePrompt(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+
+  const str = (v, max) => (typeof v === 'string' ? v.slice(0, max).trim() : '');
+  const title = str(raw.title, 200);
+  const prompt = str(raw.prompt, 20000);
+  if (!title || !prompt) return null;
+
+  const id = (typeof raw.id === 'string' && /^custom_[A-Za-z0-9_-]{1,64}$/.test(raw.id))
+    ? raw.id
+    : 'custom_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+
+  return {
+    id,
+    title,
+    prompt,
+    category: VALID_CATEGORIES.has(raw.category) ? raw.category : 'utility',
+    tags: Array.isArray(raw.tags)
+      ? raw.tags.filter(t => typeof t === 'string').map(t => t.slice(0, 40)).slice(0, 8)
+      : []
+  };
+}
+
 function importData(e) {
   const file = e.target.files[0];
   if (!file) return;
@@ -490,19 +521,27 @@ function importData(e) {
         data.favorites.forEach(id => { favorites[id] = true; });
       }
 
+      let rejected = 0;
       if (data.customPrompts && Array.isArray(data.customPrompts)) {
         // Merge with existing (don't overwrite — merge by id)
         const existingIds = new Set(customPrompts.map(p => p.id));
-        for (const p of data.customPrompts) {
+        for (const raw of data.customPrompts) {
+          const p = sanitizePrompt(raw);
+          if (!p) { rejected += 1; continue; }
           if (!existingIds.has(p.id)) {
             customPrompts.push(p);
+            existingIds.add(p.id);
           }
         }
       }
 
       saveData();
       renderPrompts();
-      showToast('📥 数据已导入', 'success');
+      if (rejected) {
+        showToast(`📥 已导入，跳过 ${rejected} 条无效数据`, 'error');
+      } else {
+        showToast('📥 数据已导入', 'success');
+      }
     } catch (err) {
       showToast('❌ 文件格式错误', 'error');
     }
@@ -541,6 +580,17 @@ function escapeHtml(str) {
   const div = document.createElement('div');
   div.textContent = str;
   return div.innerHTML;
+}
+
+// 属性值必须单独转义：上面的 escapeHtml 只处理 & < >，
+// 引号原样保留——放进 data-xxx="..." 里就能闭合属性并注入标签。
+function escapeAttr(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
 }
 
 function debounce(fn, delay) {

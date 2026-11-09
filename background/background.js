@@ -1,13 +1,20 @@
 // PromptHub — Service Worker
 // 功能：接收 popup 消息，转发给 content script 执行自动填充
 
+// 必须与 manifest 的 host_permissions、content.js 的 PLATFORM_SELECTORS 保持一致。
+// 三处任一遗漏，表现都是「在某个站点点填入没反应」——最难排查的那类问题。
 const AI_SITES = [
   'chatgpt.com',
   'claude.ai',
   'chat.deepseek.com',
   'kimi.moonshot.cn',
+  'kimi.com',
   'poe.com',
-  'tongyi.aliyun.com'
+  'tongyi.aliyun.com',
+  'doubao.com',
+  'yuanbao.tencent.com',
+  'chatglm.cn',
+  'gemini.google.com'
 ];
 
 // 检测当前标签页是否为 AI 网站
