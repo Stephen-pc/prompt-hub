@@ -1,9 +1,10 @@
 name: CI
 
-# 浏览器扩展没有单元测试可跑，但有一类错误可以机器检查：
-# 站点列表在 manifest / content / background 三处各写一份，漏一处就会
-# 「某个站点点填入没反应」——不报错、控制台干净，只能靠人肉发现。
-# 这个 workflow 就是拦这个。
+# 浏览器扩展没有传统单元测试，但有两类错误可以机器拦：
+#   1. 站点列表在 manifest / content / background 三处各写一份，漏一处就会
+#      「某个站点点填入没反应」——不报错、控制台干净。
+#   2. 平台改版导致输入框选择器失配，症状同上。
+# 前者查静态一致性，后者用 Playwright 在伪造页面上真的填一次。
 
 on:
   push:
@@ -55,3 +56,25 @@ jobs:
           }
           process.exit(bad ? 1 : 0)
           JS
+
+  fill:
+    name: 填入逻辑端到端
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: 安装依赖与浏览器
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      # 用路由拦截把 chatgpt.com / claude.ai 的响应换成本地 fixture，
+      # hostname 仍是原站点，所以平台识别和选择器匹配走的是真实路径。
+      # 断言里除了「目标框有内容」，还要求诱饵框为空——
+      # 只断言前者的话，专属选择器失效时通用兜底会填到诱饵框，测试照样通过。
+      - name: 填入测试
+        run: node tests/fill.test.mjs

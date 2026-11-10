@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><title>fixture: textarea 型输入框</title></head>
+<body>
+  <!-- 诱饵：一个可见但不是聊天输入框的 textarea。
+       通用兜底会按 DOM 顺序抓到第一个可见 textarea——如果平台专属选择器失效，
+       兜底就会填到这里。断言它保持为空，才能区分「选择器对了」和「碰巧填对了」。 -->
+  <textarea id="search-box" placeholder="搜索历史会话"></textarea>
+
+  <!-- 真正的输入框（模拟 ChatGPT） -->
+  <div class="composer">
+    <textarea id="prompt-textarea" placeholder="给 AI 发消息"></textarea>
+  </div>
+
+  <!-- 干扰项：不可见，不该被选中 -->
+  <textarea id="hidden-one" style="display:none"></textarea>
+</body>
+</html>

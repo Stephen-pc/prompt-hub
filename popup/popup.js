@@ -43,8 +43,12 @@ const $btnDeleteCustom = document.getElementById('btnDeleteCustom');
 let editingPromptId = null;
 
 // --- Init ---
-document.addEventListener('DOMContentLoaded', () => {
-  loadData();
+document.addEventListener('DOMContentLoaded', async () => {
+  // 数据读取是异步的，必须等它回来再渲染，否则首帧永远是空列表
+  const state = await loadState();
+  favorites = state.favorites;
+  customPrompts = state.customPrompts;
+
   renderCategories();
   renderPrompts();
   bindEvents();
@@ -61,19 +65,83 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-function loadData() {
+// --- Storage ---
+// 收藏和自定义提示词存在 chrome.storage.local，不再用 localStorage：
+//   - localStorage 挂在扩展源的「站点数据」下，Chrome 清除浏览数据时可能连带清掉，
+//     用户攒的收藏会一起消失，而且没有任何提示；
+//   - manifest 一直申请着 storage 权限却从未使用（商店审核会问「为什么需要它」）；
+//   - 将来要跨设备同步，只有 chrome.storage.sync 这条路，localStorage 做不到。
+//
+// 主题仍然留在 localStorage：它在 <script> 解析阶段就要生效（否则会先闪一下亮色），
+// 而 chrome.storage 是异步的，等它返回画面已经画完了。主题丢了也无所谓，数据不行。
+const SCHEMA_VERSION = 1;
+const STATE_KEY = 'prompthub_state';
+const hasChromeStorage = typeof chrome !== 'undefined' && !!chrome.storage && !!chrome.storage.local;
+
+function blankState() {
+  return { schemaVersion: SCHEMA_VERSION, favorites: {}, customPrompts: [] };
+}
+
+// 读到的结构一律过一遍这里，别信任存储里的内容——
+// 它可能来自旧版本、来自手改，也可能被别的扩展写坏。
+function normalizeState(saved) {
+  const out = blankState();
+  if (saved && typeof saved === 'object') {
+    if (saved.favorites && typeof saved.favorites === 'object') out.favorites = saved.favorites;
+    if (Array.isArray(saved.customPrompts)) out.customPrompts = saved.customPrompts;
+    // 目前只有 v1。将来加迁移时，按 saved.schemaVersion 分支处理再写回
+    out.schemaVersion = Number(saved.schemaVersion) || SCHEMA_VERSION;
+  }
+  return out;
+}
+
+// 旧版把数据放在 localStorage 的两个键里，升级时搬一次
+function readLegacyState() {
+  const out = blankState();
   try {
-    favorites = JSON.parse(localStorage.getItem('prompthub_favorites') || '{}');
-    customPrompts = JSON.parse(localStorage.getItem('prompthub_custom') || '[]');
+    out.favorites = JSON.parse(localStorage.getItem('prompthub_favorites') || '{}') || {};
+    out.customPrompts = JSON.parse(localStorage.getItem('prompthub_custom') || '[]') || [];
   } catch (e) {
-    favorites = {};
-    customPrompts = [];
+    /* 旧数据坏了就当没有，不影响启动 */
+  }
+  return out;
+}
+
+async function loadState() {
+  if (!hasChromeStorage) return readLegacyState();
+
+  try {
+    const bag = await chrome.storage.local.get(STATE_KEY);
+    if (bag && bag[STATE_KEY]) return normalizeState(bag[STATE_KEY]);
+
+    // 首次运行，或从旧版升级：搬一次，搬完清掉旧键，避免两边不一致
+    const legacy = readLegacyState();
+    await chrome.storage.local.set({ [STATE_KEY]: legacy });
+    try {
+      localStorage.removeItem('prompthub_favorites');
+      localStorage.removeItem('prompthub_custom');
+    } catch (e) { /* 清不掉也不影响，下次读的是新位置 */ }
+    return legacy;
+  } catch (e) {
+    // 存储读不了（权限、损坏）：退回旧路径，至少别白屏
+    return readLegacyState();
   }
 }
 
 function saveData() {
-  localStorage.setItem('prompthub_favorites', JSON.stringify(favorites));
-  localStorage.setItem('prompthub_custom', JSON.stringify(customPrompts));
+  const state = { schemaVersion: SCHEMA_VERSION, favorites, customPrompts };
+
+  if (!hasChromeStorage) {
+    try {
+      localStorage.setItem('prompthub_favorites', JSON.stringify(favorites));
+      localStorage.setItem('prompthub_custom', JSON.stringify(customPrompts));
+    } catch (e) { /* 配额满就放弃，不打断交互 */ }
+    return;
+  }
+
+  chrome.storage.local.set({ [STATE_KEY]: state }).catch(() => {
+    showToast('⚠️ 保存失败，可能是存储空间不足', 'error');
+  });
 }
 
 // --- Events ---

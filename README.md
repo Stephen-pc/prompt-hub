@@ -135,6 +135,18 @@ PromptHub 不收集、不上传、不在浏览器外存储任何数据。没有�
 
 ## 更新日志
 
+### 1.2.0
+
+- **收藏和自定义提示词改用 `chrome.storage.local`**。原来存在 `localStorage`，而它挂在扩展源的「站点数据」下——Chrome 清除浏览数据时可能连带清掉，用户攒的收藏会无声消失。同时 manifest 一直申请着 `storage` 权限却从未使用。
+- **加了数据版本号 `schemaVersion`**，并在首次启动时把旧 `localStorage` 里的数据自动搬过来、搬完清掉旧键。将来改数据结构才有迁移依据。
+- **新增填入逻辑的端到端测试**：用 Playwright 的路由拦截把 `chatgpt.com` / `claude.ai` 的响应换成本地 fixture，hostname 仍是原站点，所以平台识别和选择器匹配走真实路径，然后真的点一次填入并断言结果。
+- 测试里放了一个**诱饵输入框**：只断言「目标框有内容」是不够的，因为填入逻辑有通用兜底，专属选择器失效时兜底会填到诱饵框，测试照样通过。所以同时要求诱饵框为空——这样才区分得开「选择器对了」和「碰巧填对了」。
+- 主题仍存在 `localStorage`：它在 `<script>` 解析阶段就要生效（否则会先闪一下亮色），而 `chrome.storage` 是异步的。主题丢了无所谓，数据不行。
+
+### 1.1.1
+
+- 提示词数量从「200+」改为实际值 **185**。README、manifest 描述、仓库描述三处都虚标了。
+
 ### 1.1.0
 
 - **新增 4 个平台**：豆包、腾讯元宝、智谱清言、Gemini，另加 Kimi 新域名 `kimi.com`
@@ -147,6 +159,32 @@ PromptHub 不收集、不上传、不在浏览器外存储任何数据。没有�
 ### 1.0.0
 
 首个版本。
+
+---
+
+## 开发与测试
+
+扩展本体零依赖，不需要构建。测试用的依赖写在 `package.json` 的 `devDependencies` 里，只在开发时安装。
+
+```bash
+npm install                      # 只装 playwright（测试用）
+npm test                         # 一致性检查 + 填入逻辑端到端
+```
+
+单独跑：
+
+```bash
+node tools/check-consistency.js  # manifest / content / background 三处站点列表是否一致
+node tests/fill.test.mjs         # 填入逻辑（需要 playwright）
+```
+
+如果不想下载 Playwright 自带的浏览器，可以指定系统里已有的 Chrome：
+
+```bash
+CHROME_PATH="C:/Program Files/Google/Chrome/Application/chrome.exe" node tests/fill.test.mjs
+```
+
+**为什么需要这些测试**：填入功能失效时不会有任何报错——扩展不崩、控制台也干净，用户看到的只是「点了没反应」。平台改一次版，选择器就可能静默失配。这两类检查是唯一能在改版后第一时间发现问题的办法。
 
 ---
 
