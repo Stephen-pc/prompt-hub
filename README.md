@@ -135,6 +135,11 @@ PromptHub 不收集、不上传、不在浏览器外存储任何数据。没有�
 
 ## 更新日志
 
+### 1.3.0
+
+- **新增 Claude Code 自定义命令**：`tools/make-commands.py` 把提示词生成为 `~/.claude/commands/*.md`，在终端里用 `/review`、`/sql` 等直接调用。浏览器扩展和终端两条路走同一份数据。
+- 生成时跳过了与常见既有命令重复的三条（提交信息、bug 修复、单元测试），避免覆盖你原有的命令。
+
 ### 1.2.0
 
 - **收藏和自定义提示词改用 `chrome.storage.local`**。原来存在 `localStorage`，而它挂在扩展源的「站点数据」下——Chrome 清除浏览数据时可能连带清掉，用户攒的收藏会无声消失。同时 manifest 一直申请着 `storage` 权限却从未使用。
@@ -159,6 +164,35 @@ PromptHub 不收集、不上传、不在浏览器外存储任何数据。没有�
 ### 1.0.0
 
 首个版本。
+
+---
+
+## 在 Claude Code 里用
+
+同一份提示词，也能变成 **Claude Code 的自定义命令**——在终端里敲 `/review`、`/sql`，不用把长提示词手打一遍。
+
+```bash
+python tools/make-commands.py          # 生成并安装到 ~/.claude/commands
+python tools/make-commands.py --dry-run  # 只看内容，不写文件
+```
+
+生成 7 个命令：
+
+| 命令 | 作用 |
+|---|---|
+| `/review` | 五维审查：正确性 / 性能 / 安全 / 可读性 / 可维护性 |
+| `/refactor` | 重构：提重复、改命名、简化逻辑 |
+| `/sql` | SQL 性能分析 + 具体 `CREATE INDEX` 语句 |
+| `/regex` | 写正则并逐段解释，附边缘用例 |
+| `/sh` | 写 Bash 脚本，含错误处理和跨平台注意 |
+| `/ci` | 生成 GitHub Actions 工作流 |
+| `/explain` | 报错翻译成人话，按可能性排序排查 |
+
+用法：`/review src/api/user.js`，或者直接 `/review` 让它审当前对话里的代码。**给路径比粘代码片段好**——它能自己读文件，看到调用方和现有测试，结论更准。
+
+命令正文是从 `data/prompts.js` 生成的，不是手抄的。改了提示词之后重跑脚本即可，两边不会脱节。
+
+> 如果你 `~/.claude/commands` 里已经有 `commit` / `debug` / `generate-tests` 之类的命令，这套不会覆盖它们——重复的三条（提交信息、bug 修复、单元测试）故意没有生成。
 
 ---
 
