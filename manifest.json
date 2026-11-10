@@ -1,18 +1,16 @@
 {
   "manifest_version": 3,
   "name": "PromptHub - AI 提示词工具箱",
-  "version": "1.1.0",
-  "description": "200+ 精选 AI 提示词模板，一键填入 ChatGPT / Claude / DeepSeek / Kimi / 豆包 / 元宝",
+  "version": "1.1.1",
+  "description": "185 条精选 AI 提示词模板，一键填入 ChatGPT / Claude / DeepSeek / Kimi / 豆包 / 元宝",
   "author": "Stephen-pc",
   "homepage_url": "https://github.com/Stephen-pc/prompt-hub",
-
   "icons": {
     "16": "icons/icon16.png",
     "32": "icons/icon32.png",
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
   },
-
   "action": {
     "default_popup": "popup/popup.html",
     "default_title": "PromptHub - AI 提示词工具箱",
@@ -23,11 +21,9 @@
       "128": "icons/icon128.png"
     }
   },
-
   "background": {
     "service_worker": "background/background.js"
   },
-
   "content_scripts": [
     {
       "matches": [
@@ -43,17 +39,17 @@
         "https://chatglm.cn/*",
         "https://gemini.google.com/*"
       ],
-      "js": ["content/content.js"],
+      "js": [
+        "content/content.js"
+      ],
       "run_at": "document_idle"
     }
   ],
-
   "permissions": [
     "storage",
     "activeTab",
     "scripting"
   ],
-
   "host_permissions": [
     "https://chatgpt.com/*",
     "https://claude.ai/*",
