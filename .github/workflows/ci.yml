@@ -26,6 +26,11 @@ jobs:
       - name: 一致性检查
         run: node tools/check-consistency.js
 
+      # 命令正文是手写改写的，和 prompts.js 没有运行时关联。
+      # 这一步保证「来源条目还在」且「仓库里的 .md 没被手改后忘记同步脚本」。
+      - name: Claude Code 命令与脚本一致
+        run: python3 tools/make-commands.py --check
+
       - name: 所有脚本语法可解析
         run: |
           set -e

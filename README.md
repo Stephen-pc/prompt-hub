@@ -139,6 +139,7 @@ PromptHub 不收集、不上传、不在浏览器外存储任何数据。没有�
 
 - **新增 Claude Code 自定义命令**：`tools/make-commands.py` 把提示词生成为 `~/.claude/commands/*.md`，在终端里用 `/review`、`/sql` 等直接调用。浏览器扩展和终端两条路走同一份数据。
 - 生成时跳过了与常见既有命令重复的三条（提交信息、bug 修复、单元测试），避免覆盖你原有的命令。
+- `--check` 校验来源条目是否还在、仓库里的 `.md` 有没有被手改后忘记同步脚本（已接入 CI）。
 
 ### 1.2.0
 
@@ -174,6 +175,7 @@ PromptHub 不收集、不上传、不在浏览器外存储任何数据。没有�
 ```bash
 python tools/make-commands.py          # 生成并安装到 ~/.claude/commands
 python tools/make-commands.py --dry-run  # 只看内容，不写文件
+python tools/make-commands.py --check    # 校验来源与本地文件
 ```
 
 生成 7 个命令：
@@ -190,7 +192,13 @@ python tools/make-commands.py --dry-run  # 只看内容，不写文件
 
 用法：`/review src/api/user.js`，或者直接 `/review` 让它审当前对话里的代码。**给路径比粘代码片段好**——它能自己读文件，看到调用方和现有测试，结论更准。
 
-命令正文是从 `data/prompts.js` 生成的，不是手抄的。改了提示词之后重跑脚本即可，两边不会脱节。
+命令正文是从 `data/prompts.js` 里的提示词**改写**来的——终端场景要改的东西（占位符换掉、加参数兜底、禁止执行 `git commit`）没法机械替换，所以是手写的，**不是运行时读取**。也就是说：改了 `prompts.js` 不会自动更新命令，两边要一起改。
+
+`--check` 会校验两件事：来源条目是否还在、本地文件有没有被手改过。
+
+```bash
+python tools/make-commands.py --check
+```
 
 > 如果你 `~/.claude/commands` 里已经有 `commit` / `debug` / `generate-tests` 之类的命令，这套不会覆盖它们——重复的三条（提交信息、bug 修复、单元测试）故意没有生成。
 

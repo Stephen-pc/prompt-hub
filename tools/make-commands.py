@@ -1,19 +1,22 @@
 #!/usr/bin/env python3
-"""从 data/prompts.js 生成 Claude Code 自定义命令。
+"""把 data/prompts.js 里的提示词改写成 Claude Code 自定义命令。
 
-为什么要有这个脚本：命令正文是从 data/prompts.js 里那 185 条挑出来的，
-手抄一遍就会和原数据脱节。这里把「挑哪条、怎么接参数」写成代码，
-以后提示词改了可以重跑。
+注意：命令正文是**从提示词改写来的**，不是运行时从 prompts.js 读取的。
+终端场景需要改的东西（占位符、参数兜底、禁止执行 git commit）没法机械
+替换，只能人写。所以改 prompts.js 不会自动更新命令——两者需要一起改。
+`--check` 会告诉你源条目还在不在、本地文件有没有被手改过。
 
 用法：
-    python make-commands.py            # 写入 ~/.claude/commands 和工作区备份
-    python make-commands.py --dry-run  # 只看会写什么
+    python tools/make-commands.py            # 写入 ~/.claude/commands 和 claude-commands/
+    python tools/make-commands.py --dry-run  # 只看会写什么
+    python tools/make-commands.py --check    # 校验源条目与本地文件
 """
 
 from __future__ import annotations
 
 import argparse
 import pathlib
+import re
 import sys
 
 # 每条命令：(命令名, 原提示词 id, 一句话描述, 参数提示, 正文)
@@ -224,9 +227,57 @@ def render(name: str, desc: str, hint: str, body: str) -> str:
     )
 
 
+def check(args, dest: pathlib.Path, backup: pathlib.Path) -> int:
+    """校验两件事：源条目还在不在、本地文件有没有被手改过。"""
+    problems = 0
+
+    # 1. src_id 是否还存在于 data/prompts.js
+    src_file = pathlib.Path(__file__).resolve().parent.parent / "data" / "prompts.js"
+    ids = set()
+    if src_file.exists():
+        text = src_file.read_text(encoding="utf-8")
+        ids = set(re.findall(r"\bid:\s*'([^']+)'", text))
+    else:
+        print(f"  FAIL 找不到 {src_file}")
+        problems += 1
+
+    for name, src_id, *_ in COMMANDS:
+        if name in SKIP:
+            continue
+        if ids and src_id not in ids:
+            print(f"  FAIL /{name} 的来源 {src_id} 已不在 data/prompts.js 里（被删或改名？）")
+            problems += 1
+
+    # 2. 本地文件是否与脚本渲染结果一致
+    # CI 里没有 ~/.claude，安装目录不存在时跳过，只校验仓库备份
+    dirs = [("安装目录", dest)] if dest.exists() else []
+    dirs.append(("仓库备份", backup))
+
+    for name, _src, desc, hint, body in COMMANDS:
+        if name in SKIP:
+            continue
+        expected = render(name, desc, hint, body)
+        for label, d in dirs:
+            p = d / f"{name}.md"
+            if not p.exists():
+                print(f"  FAIL {label} 缺 {name}.md")
+                problems += 1
+            elif p.read_text(encoding="utf-8") != expected:
+                print(f"  FAIL {label} 的 {name}.md 与脚本不一致（被手改过？重跑生成即可覆盖）")
+                problems += 1
+
+    total = len([c for c in COMMANDS if c[0] not in SKIP])
+    if problems == 0:
+        print(f"全部通过：{total} 条命令，源条目齐全，本地文件与脚本一致")
+    else:
+        print(f"失败 {problems} 项")
+    return 0 if problems == 0 else 1
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry-run", action="store_true", help="只打印，不写文件")
+    ap.add_argument("--check", action="store_true", help="校验源条目与本地文件，不写文件")
     ap.add_argument("--dest", default=str(pathlib.Path.home() / ".claude" / "commands"),
                     help="命令安装目录，默认 ~/.claude/commands")
     args = ap.parse_args()
@@ -234,6 +285,9 @@ def main() -> int:
     here = pathlib.Path(__file__).resolve().parent
     backup = here.parent / "claude-commands"
     dest = pathlib.Path(args.dest)
+
+    if args.check:
+        return check(args, dest, backup)
 
     if not args.dry_run:
         dest.mkdir(parents=True, exist_ok=True)
