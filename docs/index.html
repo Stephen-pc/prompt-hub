@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PromptHub — 185 条 AI 提示词</title>
+  <meta name="description" content="185 条精选 AI 提示词，按分类浏览、中英文搜索，点一下复制。不需要安装任何东西。">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="web.css">
+</head>
+<body>
+  <!-- 头部（与扩展面板一致） -->
+  <header class="header">
+    <div class="header-brand">
+      <span class="header-logo">⚡</span>
+      <h1 class="header-title">PromptHub</h1>
+    </div>
+    <div class="header-actions">
+      <button id="btnExport" class="btn-icon" title="导出数据">📤</button>
+      <button id="btnImport" class="btn-icon" title="导入数据">📥</button>
+      <button id="btnTheme" class="btn-icon" title="切换主题">🌓</button>
+    </div>
+    <input type="file" id="importFile" accept=".json" class="hidden" />
+  </header>
+
+  <!-- 网页版说明：告诉用户这里和扩展的区别，避免以为「填入」按钮坏了 -->
+  <div class="web-note">
+    185 条精选提示词，浏览器里直接用，不用装东西。点 ⚡ 或 📋 都会复制到剪贴板，粘贴到任意 AI 对话框即可。
+    想在自己常用的 AI 网站上「一键填入」，装<a href="https://github.com/Stephen-pc/prompt-hub" target="_blank" rel="noopener">浏览器扩展</a>。
+  </div>
+
+  <!-- 搜索栏 -->
+  <div class="search-wrapper">
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input
+        id="searchInput"
+        type="text"
+        class="search-input"
+        placeholder="搜索提示词…（支持中英文）"
+        autocomplete="off"
+      />
+      <button id="btnClearSearch" class="btn-icon search-clear hidden">✕</button>
+    </div>
+  </div>
+
+  <!-- 分类标签 -->
+  <nav class="categories" id="categoryNav">
+    <!-- JS 动态渲染 -->
+  </nav>
+
+  <!-- 内容区 -->
+  <main class="content" id="contentArea">
+    <div id="emptyState" class="state-box">
+      <div class="empty-icon">📭</div>
+      <p id="emptyText">没有匹配的提示词</p>
+      <p class="empty-hint">试试其他关键词或分类</p>
+    </div>
+
+    <div id="promptList" class="prompt-list"></div>
+  </main>
+
+  <!-- 底部导航 -->
+  <footer class="footer-nav">
+    <button class="nav-item active" data-view="all">
+      <span class="nav-icon">📋</span>
+      <span class="nav-label">全部</span>
+    </button>
+    <button class="nav-item" data-view="favorites">
+      <span class="nav-icon">⭐</span>
+      <span class="nav-label">收藏</span>
+      <span id="favCount" class="nav-badge hidden">0</span>
+    </button>
+    <button class="nav-item" data-view="custom">
+      <span class="nav-icon">✏️</span>
+      <span class="nav-label">自定义</span>
+      <span id="customCount" class="nav-badge hidden">0</span>
+    </button>
+  </footer>
+
+  <!-- 添加/编辑自定义提示词弹窗 -->
+  <div id="editModal" class="modal hidden">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="editModalTitle">添加自定义提示词</h3>
+        <button id="btnCloseEdit" class="btn-icon">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label>标题</label>
+          <input id="editTitle" type="text" placeholder="提示词标题" maxlength="50" />
+        </div>
+        <div class="form-group">
+          <label>分类</label>
+          <select id="editCategory"></select>
+        </div>
+        <div class="form-group">
+          <label>提示词内容</label>
+          <textarea id="editPrompt" rows="6" placeholder="输入完整的提示词模板…"></textarea>
+        </div>
+        <div class="form-group">
+          <label>标签（逗号分隔）</label>
+          <input id="editTags" type="text" placeholder="如：写作, 文案, 营销" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="btnDeleteCustom" class="btn btn-danger hidden">🗑️ 删除</button>
+        <button id="btnSaveCustom" class="btn btn-primary">💾 保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 提示词详情弹窗 -->
+  <div id="detailModal" class="modal hidden">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content detail-content">
+      <div class="modal-header">
+        <h3 id="detailTitle"></h3>
+        <button id="btnCloseDetail" class="btn-icon">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="detail-meta">
+          <span id="detailCategory" class="detail-tag"></span>
+          <span id="detailTags" class="detail-tags-text"></span>
+        </div>
+        <pre id="detailPrompt" class="detail-prompt"></pre>
+      </div>
+      <div class="modal-footer">
+        <button id="btnCopyFromDetail" class="btn btn-secondary">📋 复制</button>
+        <button id="btnUseFromDetail" class="btn btn-primary">⚡ 填入 AI 聊天框</button>
+        <button id="btnFavoriteFromDetail" class="btn btn-icon fav-btn">⭐</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="toast hidden"></div>
+
+  <!-- 脚本：shim 必须在 app.js 之前 -->
+  <script src="prompts.js"></script>
+  <script src="chrome-shim.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

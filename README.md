@@ -9,10 +9,10 @@
 </p>
 
 <p align="center">
+  <a href="https://stephen-pc.github.io/prompt-hub/"><strong>在线使用（不用安装）</strong></a> ·
   <a href="#这是什么">这是什么</a> ·
   <a href="#功能">功能</a> ·
   <a href="#安装">安装</a> ·
-  <a href="#用法">用法</a> ·
   <a href="#支持的平台">支持的平台</a>
 </p>
 
@@ -40,6 +40,14 @@
 | 🔒 **纯本地** | 数据全部存在浏览器里，无追踪、无服务器、无统计 |
 
 ---
+
+## 网页版
+
+不想装扩展的话，直接用网页版：**https://stephen-pc.github.io/prompt-hub/**
+
+分类浏览、中英文搜索、收藏、自定义提示词都有，点一下复制到剪贴板，粘到任意 AI 对话框就能用。手机上也能开。
+
+网页版和扩展**共用同一份界面代码和同一份提示词**（`docs/` 由 `tools/build-web.mjs` 从 `popup/` 和 `data/` 生成），所以两边的功能不会各改各的。唯一的区别是网页版没有「一键填入」——它拿不到当前标签页的输入框，只能复制。
 
 ## 安装
 
@@ -134,6 +142,11 @@ PromptHub 不收集、不上传、不在浏览器外存储任何数据。没有�
 ---
 
 ## 更新日志
+
+### 1.4.0
+
+- **新增网页版**：`https://stephen-pc.github.io/prompt-hub/`，不用安装就能用。复用扩展的界面与数据，靠一个 `chrome-shim.js` 把 `chrome.storage` 换成 `localStorage`、把「填入」降级为「复制」，扩展代码一行没改。
+- `docs/` 下的文件由 `tools/build-web.mjs` 生成，CI 校验它们与源文件一致，避免改了 `popup/` 忘了重新生成。
 
 ### 1.3.0
 

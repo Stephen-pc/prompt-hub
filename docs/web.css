@@ -1,0 +1,48 @@
+/* 网页版对扩展面板样式的覆盖。
+   扩展面板是固定 480px 宽的小窗，网页里要铺开、要能在手机上看。 */
+
+body {
+  width: auto;
+  max-width: 1080px;
+  margin: 0 auto;
+  min-height: 100vh;
+}
+
+/* 卡片在宽屏下排成多列，手机上退回单列 */
+#promptList {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 12px;
+  align-items: start;
+}
+
+/* 扩展里列表是可滚动的一小块，网页里交给整页滚动 */
+.content {
+  max-height: none;
+  overflow: visible;
+}
+
+/* 顶部加一条说明，讲清楚网页版和扩展的区别 */
+.web-note {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 10px 20px 0;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--text-secondary, #8a8a9a);
+}
+
+.web-note a {
+  color: var(--accent, #38bdf8);
+  text-decoration: none;
+}
+
+.web-note a:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 640px) {
+  #promptList {
+    grid-template-columns: 1fr;
+  }
+}

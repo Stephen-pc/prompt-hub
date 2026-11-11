@@ -31,6 +31,10 @@ jobs:
       - name: Claude Code 命令与脚本一致
         run: python3 tools/make-commands.py --check
 
+      # docs/ 是从 popup/ 和 data/ 生成出来的，改了源忘了重新生成就会不一致
+      - name: 网页版文件与源一致
+        run: node tools/build-web.mjs --check
+
       - name: 所有脚本语法可解析
         run: |
           set -e
