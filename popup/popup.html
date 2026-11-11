@@ -118,6 +118,8 @@
           <span id="detailCategory" class="detail-tag"></span>
           <span id="detailTags" class="detail-tags-text"></span>
         </div>
+        <!-- 占位符表单：打开时按提示词里的 [xxx] 动态生成输入框 -->
+        <div id="detailForm" class="detail-form hidden"></div>
         <pre id="detailPrompt" class="detail-prompt"></pre>
       </div>
       <div class="modal-footer">
@@ -133,6 +135,7 @@
 
   <!-- 脚本 -->
   <script src="../data/prompts.js"></script>
+  <script src="../data/search-index.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

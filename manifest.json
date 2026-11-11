@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "PromptHub - AI 提示词工具箱",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "185 条精选 AI 提示词模板，一键填入 ChatGPT / Claude / DeepSeek / Kimi / 豆包 / 元宝",
   "author": "Stephen-pc",
   "homepage_url": "https://github.com/Stephen-pc/prompt-hub",

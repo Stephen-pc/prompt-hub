@@ -8,6 +8,7 @@ let currentView = 'all';        // 'all' | 'favorites' | 'custom'
 let currentCategory = 'all';    // category key
 let searchQuery = '';
 let selectedPromptId = null;    // for detail modal
+let detailRawPrompt = '';       // 详情里那条提示词的原始文本（未被占位符替换）
 
 // --- Data ---
 let favorites = {};             // { promptId: true }
@@ -31,6 +32,7 @@ const $detailTitle = document.getElementById('detailTitle');
 const $detailCategory = document.getElementById('detailCategory');
 const $detailTags = document.getElementById('detailTags');
 const $detailPrompt = document.getElementById('detailPrompt');
+const $detailForm = document.getElementById('detailForm');
 
 // Edit modal
 const $editModal = document.getElementById('editModal');
@@ -52,6 +54,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   renderCategories();
   renderPrompts();
   bindEvents();
+
+  // 深链：链接里带 #/p/<id> 就直接打开那一条，不用在 185 条里翻
+  const initialId = readHashId();
+  if (initialId) openDetail(initialId, { fromHash: true });
+
+  // 浏览器前进/后退、手动改地址，都要跟着开合详情
+  window.addEventListener('hashchange', () => {
+    const id = readHashId();
+    if (id) {
+      if (id !== selectedPromptId) openDetail(id, { fromHash: true });
+    } else if (selectedPromptId) {
+      closeDetail({ fromHash: true });
+    }
+  });
 
   // Focus search on Ctrl+F / Cmd+F
   document.addEventListener('keydown', (e) => {
@@ -220,8 +236,20 @@ function bindEvents() {
 
   // Detail modal
   document.getElementById('btnCloseDetail').addEventListener('click', closeDetail);
-  document.getElementById('btnCopyFromDetail').addEventListener('click', () => copyPrompt(selectedPromptId));
-  document.getElementById('btnUseFromDetail').addEventListener('click', () => fillPrompt(selectedPromptId));
+  document.getElementById('btnCopyFromDetail').addEventListener('click', () => {
+    const p = findPrompt(selectedPromptId);
+    if (!p) return;
+    navigator.clipboard.writeText(applyPlaceholders(p.prompt)).then(() => {
+      const n = $detailForm.querySelectorAll('.ph-input[value], .ph-input').length;
+      const filled = [...$detailForm.querySelectorAll('.ph-input')].filter(i => i.value.trim()).length;
+      showToast(filled ? `✅ 已复制（填了 ${filled} 处）` : '✅ 已复制到剪贴板', 'success');
+    }).catch(() => showToast('❌ 复制失败', 'error'));
+  });
+  document.getElementById('btnUseFromDetail').addEventListener('click', () => {
+    const p = findPrompt(selectedPromptId);
+    if (!p) return;
+    fillText(applyPlaceholders(p.prompt));
+  });
   document.getElementById('btnFavoriteFromDetail').addEventListener('click', () => {
     toggleFavorite(selectedPromptId);
     updateDetailFavBtn();
@@ -352,6 +380,10 @@ function getFilteredPrompts() {
       if ((p.prompt || '').toLowerCase().includes(q)) return true;
       if ((p.tags || []).some(t => t.toLowerCase().includes(q))) return true;
       if ((p.category || '').toLowerCase().includes(q)) return true;
+      // 拼音：搜 gongsi 或 gs 都能找到「公司」。
+      // 单字母不参与拼音匹配，否则随便敲一个字母会命中一大片。
+      const meta = (typeof SEARCH_INDEX !== 'undefined') ? SEARCH_INDEX[p.id] : null;
+      if (q.length >= 2 && meta && (meta.i.includes(q) || meta.f.includes(q))) return true;
       return false;
     });
   }
@@ -373,11 +405,16 @@ function copyPrompt(id) {
 function fillPrompt(id) {
   const prompt = findPrompt(id);
   if (!prompt) return;
+  fillText(prompt.prompt);
+}
 
+// 和 fillPrompt 的区别：这里收的是已经拼好的文本（可能已经填过占位符），
+// 不再按 id 去查原始提示词。
+function fillText(text) {
   // Check if current tab is an AI site
   chrome.runtime.sendMessage({ type: 'CHECK_AI_SITE' }, (response) => {
     if (response && response.isAISite) {
-      chrome.runtime.sendMessage({ type: 'FILL_PROMPT', text: prompt.prompt }, (res) => {
+      chrome.runtime.sendMessage({ type: 'FILL_PROMPT', text }, (res) => {
         if (res && res.success) {
           showToast('⚡ 已填入聊天框！', 'success');
           window.close();
@@ -387,7 +424,7 @@ function fillPrompt(id) {
       });
     } else {
       // Copy and notify
-      navigator.clipboard.writeText(prompt.prompt).then(() => {
+      navigator.clipboard.writeText(text).then(() => {
         showToast('📋 已复制（请在AI页面使用）', 'warning');
       });
     }
@@ -405,7 +442,63 @@ function toggleFavorite(id) {
 }
 
 // --- Detail Modal ---
-function openDetail(id) {
+// 提示词里的 [方括号] 就是让用户填的空。185 条里有 178 条带这种占位符，
+// 原来只能复制走再手动找括号替换——这是整个产品最大的摩擦点。
+function extractPlaceholders(text) {
+  const out = [];
+  const seen = new Set();
+  for (const m of String(text).matchAll(/\[([^\[\]]{1,20})\]/g)) {
+    const key = m[1].trim();
+    if (key && !seen.has(key)) {
+      seen.add(key);
+      out.push(key);
+    }
+  }
+  return out;
+}
+
+// 按占位符生成输入框。数量不多（每条平均 2–4 个），全部平铺展示。
+function renderPlaceholderForm(text) {
+  const keys = extractPlaceholders(text);
+  if (!keys.length) {
+    $detailForm.innerHTML = '';
+    $detailForm.classList.add('hidden');
+    return;
+  }
+  $detailForm.innerHTML = keys.map((k, i) => `
+    <label class="ph-field">
+      <span class="ph-label">${escapeHtml(k)}</span>
+      <input class="ph-input" type="text" data-ph="${escapeAttr(k)}"
+             placeholder="填这里…" autocomplete="off" ${i === 0 ? 'data-first="1"' : ''} />
+    </label>`).join('');
+  $detailForm.classList.remove('hidden');
+
+  // 实时预览：填一个空，下面那段提示词立刻变成替换后的样子。
+  // 用户能看见结果，才知道这些框是干什么用的。
+  $detailForm.oninput = () => {
+    $detailPrompt.textContent = applyPlaceholders(detailRawPrompt);
+  };
+}
+
+// 用输入框里的内容替换 [xxx]；没填的保持原样，不硬塞空字符串
+function applyPlaceholders(text) {
+  if (!$detailForm || $detailForm.classList.contains('hidden')) return text;
+  let out = String(text);
+  for (const input of $detailForm.querySelectorAll('.ph-input')) {
+    const value = input.value.trim();
+    if (!value) continue;
+    out = out.split('[' + input.dataset.ph + ']').join(value);
+  }
+  return out;
+}
+
+// 深链：#/p/<id>。发出去的链接能直接落到某一条上，不用在 185 条里翻。
+function readHashId() {
+  const m = location.hash.match(/^#\/p\/([\w-]+)$/);
+  return m ? m[1] : null;
+}
+
+function openDetail(id, { fromHash = false } = {}) {
   const prompt = findPrompt(id);
   if (!prompt) return;
   selectedPromptId = id;
@@ -415,15 +508,27 @@ function openDetail(id) {
   const catLabel = (CATEGORIES.find(c => c.key === prompt.category) || {}).label || prompt.category;
   $detailCategory.textContent = `${catIcon} ${catLabel}`;
   $detailTags.textContent = (prompt.tags || []).join(' · ');
+  detailRawPrompt = prompt.prompt;
   $detailPrompt.textContent = prompt.prompt;
+  renderPlaceholderForm(prompt.prompt);
 
   $detailModal.classList.remove('hidden');
   updateDetailFavBtn();
+
+  if (!fromHash && location.hash !== '#/p/' + id) {
+    location.hash = '#/p/' + id;
+  }
+  // 打开就聚焦第一个空，省一次点击
+  const first = $detailForm.querySelector('.ph-input');
+  if (first) first.focus();
 }
 
-function closeDetail() {
+function closeDetail({ fromHash = false } = {}) {
   $detailModal.classList.add('hidden');
   selectedPromptId = null;
+  if (!fromHash && readHashId()) {
+    location.hash = '';
+  }
 }
 
 function updateDetailFavBtn() {

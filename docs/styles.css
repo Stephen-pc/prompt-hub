@@ -699,3 +699,56 @@ body {
 .prompt-card:nth-child(8) { animation-delay: 0.14s; }
 .prompt-card:nth-child(9) { animation-delay: 0.16s; }
 .prompt-card:nth-child(10) { animation-delay: 0.18s; }
+
+/* ---------- 占位符表单 ----------
+   提示词里的 [xxx] 自动变成输入框。填完再复制，就不用拿回去手动改。 */
+
+.detail-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0 0 12px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-secondary);
+}
+
+.ph-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ph-label {
+  flex: 0 0 92px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text-secondary);
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ph-input {
+  flex: 1;
+  min-width: 0;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 13px;
+  font-family: inherit;
+}
+
+.ph-input::placeholder {
+  color: var(--text-placeholder);
+}
+
+.ph-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-light);
+}

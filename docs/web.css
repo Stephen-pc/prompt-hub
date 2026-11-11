@@ -46,3 +46,8 @@ body {
     grid-template-columns: 1fr;
   }
 }
+
+/* 网页版屏幕大，详情弹窗不必挤在扩展面板那么窄的宽度里 */
+.modal-content {
+  max-width: min(720px, 92vw);
+}

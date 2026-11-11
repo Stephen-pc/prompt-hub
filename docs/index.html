@@ -1,16 +1,16 @@
+<!-- 自动生成，不要手改。改 popup/popup.html 后重跑 tools/build-web.mjs -->
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PromptHub — 185 条 AI 提示词</title>
-  <meta name="description" content="185 条精选 AI 提示词，按分类浏览、中英文搜索，点一下复制。不需要安装任何东西。">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="web.css">
 </head>
 <body>
-  <!-- 头部（与扩展面板一致） -->
+  <!-- 头部 -->
   <header class="header">
     <div class="header-brand">
       <span class="header-logo">⚡</span>
@@ -24,11 +24,11 @@
     <input type="file" id="importFile" accept=".json" class="hidden" />
   </header>
 
-  <!-- 网页版说明：告诉用户这里和扩展的区别，避免以为「填入」按钮坏了 -->
   <div class="web-note">
     185 条精选提示词，浏览器里直接用，不用装东西。点 ⚡ 或 📋 都会复制到剪贴板，粘贴到任意 AI 对话框即可。
     想在自己常用的 AI 网站上「一键填入」，装<a href="https://github.com/Stephen-pc/prompt-hub" target="_blank" rel="noopener">浏览器扩展</a>。
   </div>
+
 
   <!-- 搜索栏 -->
   <div class="search-wrapper">
@@ -52,12 +52,14 @@
 
   <!-- 内容区 -->
   <main class="content" id="contentArea">
+    <!-- 加载/空状态 -->
     <div id="emptyState" class="state-box">
       <div class="empty-icon">📭</div>
       <p id="emptyText">没有匹配的提示词</p>
       <p class="empty-hint">试试其他关键词或分类</p>
     </div>
 
+    <!-- 提示词卡片列表 -->
     <div id="promptList" class="prompt-list"></div>
   </main>
 
@@ -125,6 +127,8 @@
           <span id="detailCategory" class="detail-tag"></span>
           <span id="detailTags" class="detail-tags-text"></span>
         </div>
+        <!-- 占位符表单：打开时按提示词里的 [xxx] 动态生成输入框 -->
+        <div id="detailForm" class="detail-form hidden"></div>
         <pre id="detailPrompt" class="detail-prompt"></pre>
       </div>
       <div class="modal-footer">
@@ -138,8 +142,9 @@
   <!-- Toast -->
   <div id="toast" class="toast hidden"></div>
 
-  <!-- 脚本：shim 必须在 app.js 之前 -->
+  <!-- 脚本 -->
   <script src="prompts.js"></script>
+  <script src="search-index.js"></script>
   <script src="chrome-shim.js"></script>
   <script src="app.js"></script>
 </body>

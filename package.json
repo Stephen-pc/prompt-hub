@@ -1,6 +1,6 @@
 {
   "name": "prompt-hub",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "private": true,
   "description": "185 条精选 AI 提示词，一键填入主流 AI 对话站。扩展本体零依赖，这里的依赖只用于测试。",
   "scripts": {
@@ -8,6 +8,7 @@
     "test": "node tools/check-consistency.js && node tests/fill.test.mjs"
   },
   "devDependencies": {
+    "pinyin-pro": "^3.29.5",
     "playwright": "^1.49.0"
   }
 }

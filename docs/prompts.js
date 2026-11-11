@@ -1,4 +1,4 @@
-// 自动生成，不要手改。改 data/prompts.js 后重跑 tools/build-web.mjs
+// 自动生成，不要手改。改源文件后重跑 tools/build-web.mjs
 // PromptHub — 提示词数据库
 // 200+ 精选 AI 提示词模板，按10个分类组织
 // 可直接 import 或作为全局变量使用
