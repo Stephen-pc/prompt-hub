@@ -23,6 +23,11 @@ jobs:
         with:
           node-version: "20"
 
+      # build-search-index.mjs 依赖 pinyin-pro（只在构建时用），
+      # 不装依赖这一步会 ERR_MODULE_NOT_FOUND。
+      - name: 安装依赖
+        run: npm ci
+
       - name: 一致性检查
         run: node tools/check-consistency.js
 
