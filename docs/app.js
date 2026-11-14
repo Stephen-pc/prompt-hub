@@ -19,6 +19,7 @@ let view = 'all';
 let category = 'all';
 let selectedId = null;
 let editingId = null;
+let drafts = new Map();
 let draft = new Map();
 let toastTimer;
 
@@ -174,7 +175,7 @@ function updatePreview() {
 function selectPrompt(id, updateHash = true) {
   const prompt = findPrompt(id);
   if (!prompt) return false;
-  if (selectedId !== id) draft = new Map();
+  if (selectedId !== id) draft = drafts.get(id) || new Map();
   selectedId = id;
   editingId = null;
   ui.detailTitle.textContent = prompt.title;
@@ -316,6 +317,7 @@ function exportBackup() {
   ui.detailForm.addEventListener('input', event => {
     if (!event.target.matches('[data-field]')) return;
     draft.set(event.target.dataset.field, event.target.value);
+    drafts.set(selectedId, draft);
     updatePreview();
   });
   $('copyButton').addEventListener('click', () => copyText(updatePreview(), '成品已复制。'));
@@ -349,6 +351,8 @@ function exportBackup() {
       ? state.customPrompts.map(item => item.id === editingId ? nextPrompt : item)
       : [...state.customPrompts, nextPrompt];
     if (persist({ ...state, customPrompts })) {
+      drafts.delete(nextPrompt.id);
+      draft = new Map();
       selectPrompt(nextPrompt.id);
       notify('已保存到本机浏览器。');
     }
@@ -358,7 +362,11 @@ function exportBackup() {
     const customPrompts = state.customPrompts.filter(item => item.id !== editingId);
     const favorites = { ...state.favorites };
     delete favorites[editingId];
-    if (persist({ ...state, favorites, customPrompts })) { returnToList(); notify('已删除。'); }
+    if (persist({ ...state, favorites, customPrompts })) {
+      drafts.delete(editingId);
+      returnToList();
+      notify('已删除。');
+    }
   });
   ui.dataButton.addEventListener('click', () => {
     ui.dataMenu.hidden = !ui.dataMenu.hidden;
