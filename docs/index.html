@@ -1,151 +1,69 @@
-<!-- 自动生成，不要手改。改 popup/popup.html 后重跑 tools/build-web.mjs -->
-<!DOCTYPE html>
-<html lang="zh-CN">
+<!doctype html>
+<html lang="zh-CN" data-theme="dark">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PromptHub — 185 条 AI 提示词</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101716">
+  <meta name="description" content="185 条可填写的 AI 提示词。搜索、填写、预览、复制；无需安装和账号。">
+  <title>PromptHub — 把想法写成好用的提示词</title>
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
-  <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="web.css">
 </head>
 <body>
-  <!-- 头部 -->
-  <header class="header">
-    <div class="header-brand">
-      <span class="header-logo">⚡</span>
-      <h1 class="header-title">PromptHub</h1>
+  <header class="masthead">
+    <a class="wordmark" href="#" aria-label="PromptHub 首页"><span class="mark" aria-hidden="true">P/</span> PromptHub</a>
+    <div class="header-right"><span class="local-mark">仅保存在本机浏览器</span><button class="quiet" id="dataButton" type="button" aria-expanded="false" aria-controls="dataMenu">数据与设置 <span aria-hidden="true">⌄</span></button></div>
+    <div class="data-menu" id="dataMenu" hidden>
+      <button type="button" id="importButton">导入备份（合并）</button>
+      <button type="button" id="exportButton">导出备份</button>
+      <button type="button" id="themeButton">切换浅色 / 深色</button>
+      <a href="https://github.com/Stephen-pc/prompt-hub" target="_blank" rel="noopener noreferrer">扩展与源码 ↗</a>
     </div>
-    <div class="header-actions">
-      <button id="btnExport" class="btn-icon" title="导出数据">📤</button>
-      <button id="btnImport" class="btn-icon" title="导入数据">📥</button>
-      <button id="btnTheme" class="btn-icon" title="切换主题">🌓</button>
-    </div>
-    <input type="file" id="importFile" accept=".json" class="hidden" />
+    <input type="file" id="importFile" accept=".json,application/json" hidden>
   </header>
 
-  <div class="web-note">
-    185 条精选提示词，浏览器里直接用，不用装东西。点 ⚡ 或 📋 都会复制到剪贴板，粘贴到任意 AI 对话框即可。
-    想在自己常用的 AI 网站上「一键填入」，装<a href="https://github.com/Stephen-pc/prompt-hub" target="_blank" rel="noopener">浏览器扩展</a>。
-  </div>
+  <main>
+    <div class="intro"><p class="eyebrow">用词库，不用重新造轮子</p><h1>把想法写清楚，再交给 AI。</h1><p>找一条接近的，填上自己的内容，复制成品。185 条都能免费使用，不需要登录。</p></div>
+    <div class="workbench">
+      <section class="browser" aria-label="查找提示词">
+        <label class="search-label" for="searchInput">你想让 AI 做什么？</label>
+        <div class="search-wrap"><input id="searchInput" type="search" placeholder="试试“代码审查”、fanyi 或 fy" autocomplete="off" spellcheck="false"><kbd>/</kbd></div>
+        <div id="viewNav" class="view-nav" aria-label="浏览范围">
+          <button type="button" data-view="all" aria-pressed="true">全部 <span id="allCount"></span></button>
+          <button type="button" data-view="favorites" aria-pressed="false">收藏 <span id="favCount">0</span></button>
+          <button type="button" data-view="custom" aria-pressed="false">我的 <span id="customCount">0</span></button>
+        </div>
+        <nav class="categories" id="categoryNav" aria-label="提示词分类"></nav>
+        <div class="results-head"><span id="resultsCount" role="status" aria-live="polite"></span><button id="newPromptButton" type="button" class="text-action">＋ 新建我的提示词</button></div>
+        <div id="promptList" class="prompt-list"></div>
+        <div id="emptyState" class="empty-state" hidden><p id="emptyText">没有找到匹配的提示词。</p><button type="button" id="resetButton" class="text-action">清除筛选，看看全部</button></div>
+      </section>
 
-
-  <!-- 搜索栏 -->
-  <div class="search-wrapper">
-    <div class="search-box">
-      <span class="search-icon">🔍</span>
-      <input
-        id="searchInput"
-        type="text"
-        class="search-input"
-        placeholder="搜索提示词…（支持中英文）"
-        autocomplete="off"
-      />
-      <button id="btnClearSearch" class="btn-icon search-clear hidden">✕</button>
+      <section class="editor" id="editor" aria-label="填写和预览提示词">
+        <div id="editorEmpty" class="editor-empty"><span class="empty-index">P/</span><h2>从左边选一条。</h2><p>不确定要搜什么？先试试“周报”“代码”或“翻译”。</p></div>
+        <div id="editorDetail" hidden>
+          <div class="editor-bar"><button type="button" class="mobile-back" id="backButton">← 返回列表</button><span id="detailCategory" class="category-caption"></span><div class="editor-tools"><button type="button" class="quiet" id="favoriteButton" aria-pressed="false">收藏</button><button type="button" class="quiet" id="shareButton">复制链接</button><button type="button" class="quiet" id="editButton" hidden>编辑</button></div></div>
+          <h2 id="detailTitle" class="detail-title"></h2><p id="detailDescription" class="detail-description"></p>
+          <div id="fieldSection" class="field-section"><div class="section-heading"><h3>填写自己的内容</h3><span id="fieldCount"></span></div><div id="detailForm" class="field-grid"></div></div>
+          <div class="preview-section"><div class="section-heading"><h3>成品预览</h3><span id="missingCount" aria-live="polite"></span></div><pre id="detailPrompt" class="prompt-preview"></pre></div>
+          <div class="editor-footer"><button type="button" id="copyButton" class="primary">复制成品 <span aria-hidden="true">↗</span></button><p id="copyHint">复制后粘贴到你常用的 AI 对话框。</p></div>
+        </div>
+        <form id="customEditor" hidden>
+          <div class="editor-bar"><button type="button" class="mobile-back" id="cancelMobileButton">← 返回列表</button><span class="category-caption">我的提示词</span></div>
+          <h2 id="customHeading" class="detail-title">新建提示词</h2>
+          <label class="field">标题<input id="customTitle" maxlength="100" required placeholder="比如：用大白话解释报错"></label>
+          <label class="field">分类<select id="customCategory"></select></label>
+          <label class="field">标签（逗号分隔）<input id="customTags" placeholder="代码, 调试"></label>
+          <label class="field">内容<textarea id="customText" rows="9" maxlength="20000" required placeholder="写下提示词；[方括号] 可以自动生成填空项"></textarea></label>
+          <div class="editor-footer"><button type="submit" class="primary">保存提示词</button><button type="button" id="cancelEditButton" class="quiet">取消</button><button type="button" id="deleteButton" class="danger" hidden>删除这条</button></div>
+        </form>
+      </section>
     </div>
-  </div>
-
-  <!-- 分类标签 -->
-  <nav class="categories" id="categoryNav">
-    <!-- JS 动态渲染 -->
-  </nav>
-
-  <!-- 内容区 -->
-  <main class="content" id="contentArea">
-    <!-- 加载/空状态 -->
-    <div id="emptyState" class="state-box">
-      <div class="empty-icon">📭</div>
-      <p id="emptyText">没有匹配的提示词</p>
-      <p class="empty-hint">试试其他关键词或分类</p>
-    </div>
-
-    <!-- 提示词卡片列表 -->
-    <div id="promptList" class="prompt-list"></div>
   </main>
-
-  <!-- 底部导航 -->
-  <footer class="footer-nav">
-    <button class="nav-item active" data-view="all">
-      <span class="nav-icon">📋</span>
-      <span class="nav-label">全部</span>
-    </button>
-    <button class="nav-item" data-view="favorites">
-      <span class="nav-icon">⭐</span>
-      <span class="nav-label">收藏</span>
-      <span id="favCount" class="nav-badge hidden">0</span>
-    </button>
-    <button class="nav-item" data-view="custom">
-      <span class="nav-icon">✏️</span>
-      <span class="nav-label">自定义</span>
-      <span id="customCount" class="nav-badge hidden">0</span>
-    </button>
-  </footer>
-
-  <!-- 添加/编辑自定义提示词弹窗 -->
-  <div id="editModal" class="modal hidden">
-    <div class="modal-backdrop"></div>
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3 id="editModalTitle">添加自定义提示词</h3>
-        <button id="btnCloseEdit" class="btn-icon">✕</button>
-      </div>
-      <div class="modal-body">
-        <div class="form-group">
-          <label>标题</label>
-          <input id="editTitle" type="text" placeholder="提示词标题" maxlength="50" />
-        </div>
-        <div class="form-group">
-          <label>分类</label>
-          <select id="editCategory"></select>
-        </div>
-        <div class="form-group">
-          <label>提示词内容</label>
-          <textarea id="editPrompt" rows="6" placeholder="输入完整的提示词模板…"></textarea>
-        </div>
-        <div class="form-group">
-          <label>标签（逗号分隔）</label>
-          <input id="editTags" type="text" placeholder="如：写作, 文案, 营销" />
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button id="btnDeleteCustom" class="btn btn-danger hidden">🗑️ 删除</button>
-        <button id="btnSaveCustom" class="btn btn-primary">💾 保存</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- 提示词详情弹窗 -->
-  <div id="detailModal" class="modal hidden">
-    <div class="modal-backdrop"></div>
-    <div class="modal-content detail-content">
-      <div class="modal-header">
-        <h3 id="detailTitle"></h3>
-        <button id="btnCloseDetail" class="btn-icon">✕</button>
-      </div>
-      <div class="modal-body">
-        <div class="detail-meta">
-          <span id="detailCategory" class="detail-tag"></span>
-          <span id="detailTags" class="detail-tags-text"></span>
-        </div>
-        <!-- 占位符表单：打开时按提示词里的 [xxx] 动态生成输入框 -->
-        <div id="detailForm" class="detail-form hidden"></div>
-        <pre id="detailPrompt" class="detail-prompt"></pre>
-      </div>
-      <div class="modal-footer">
-        <button id="btnCopyFromDetail" class="btn btn-secondary">📋 复制</button>
-        <button id="btnUseFromDetail" class="btn btn-primary">⚡ 填入 AI 聊天框</button>
-        <button id="btnFavoriteFromDetail" class="btn btn-icon fav-btn">⭐</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Toast -->
-  <div id="toast" class="toast hidden"></div>
-
-  <!-- 脚本 -->
+  <footer class="page-footer"><span>PromptHub · 一份本地词库</span><span>网页版复制使用；扩展版可填入 AI 聊天框</span></footer>
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
   <script src="prompts.js"></script>
   <script src="search-index.js"></script>
-  <script src="chrome-shim.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

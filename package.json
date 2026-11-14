@@ -5,7 +5,7 @@
   "description": "185 条精选 AI 提示词，一键填入主流 AI 对话站。扩展本体零依赖，这里的依赖只用于测试。",
   "scripts": {
     "check": "node tools/check-consistency.js",
-    "test": "node tools/check-consistency.js && node tests/fill.test.mjs"
+    "test": "node tools/check-consistency.js && node tools/build-search-index.mjs --check && node tools/build-web.mjs --check && node tests/fill.test.mjs && node tests/workbench.test.mjs"
   },
   "devDependencies": {
     "pinyin-pro": "^3.29.5",

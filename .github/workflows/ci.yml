@@ -40,8 +40,8 @@ jobs:
       - name: 拼音索引与提示词同步
         run: node tools/build-search-index.mjs --check
 
-      # docs/ 是从 popup/ 和 data/ 生成出来的，改了源忘了重新生成就会不一致
-      - name: 网页版文件与源一致
+      # 网页版只有提示词及拼音索引由 data/ 生成；页面结构独立维护。
+      - name: 网页版数据文件与源一致
         run: node tools/build-web.mjs --check
 
       - name: 所有脚本语法可解析
@@ -94,5 +94,7 @@ jobs:
       # hostname 仍是原站点，所以平台识别和选择器匹配走的是真实路径。
       # 断言里除了「目标框有内容」，还要求诱饵框为空——
       # 只断言前者的话，专属选择器失效时通用兜底会填到诱饵框，测试照样通过。
-      - name: 填入测试
-        run: node tests/fill.test.mjs
+      - name: 填入与网页版工作台测试
+        run: |
+          node tests/fill.test.mjs
+          node tests/workbench.test.mjs
